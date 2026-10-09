@@ -1,4 +1,38 @@
+import { useState, useEffect } from "react";
+
 function App() {
+  const [backendStatus, setBackendStatus] = useState("not-checked");
+  const [isChecking, setIsChecking] = useState(false);
+  const [lastChecked, setLastChecked] = useState("");
+
+  const checkBackendConnection = async () => {
+    setIsChecking(true);
+
+    try {
+      const response = await fetch(
+        "https://backend-course-api-fzwg.onrender.com/health",
+      );
+
+      if (!response.ok) {
+        throw new Error("Backend health check failed");
+      }
+
+      const data = await response.json();
+
+      if (data.success === true) {
+        setBackendStatus("connected");
+      } else {
+        setBackendStatus("failed");
+      }
+    } catch (error) {
+      console.error("Backend connection error:", error);
+      setBackendStatus("failed");
+    } finally {
+      setIsChecking(false);
+      setLastChecked(new Date().toLocaleTimeString());
+    }
+  };
+
   const features = [
     {
       number: "01",
@@ -147,6 +181,7 @@ function App() {
           ))}
         </section>
 
+       
         {/* API endpoint */}
         <section className="mt-5 overflow-hidden rounded-2xl border border-indigo-400/20 bg-gradient-to-br from-indigo-500/[0.09] via-white/[0.025] to-violet-500/[0.06]">
           <div className="flex flex-col gap-7 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:p-10">
@@ -164,19 +199,64 @@ function App() {
                 https://backend-course-api-fzwg.onrender.com
               </p>
 
+              <div className="mt-5">
+                <p className="text-sm text-zinc-400">
+                  Backend connection status
+                </p>
+
+                <span
+                  className={`mt-2 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${
+                    backendStatus === "connected"
+                      ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                      : backendStatus === "failed"
+                        ? "border-red-400/20 bg-red-400/10 text-red-300"
+                        : backendStatus === "checking"
+                          ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+                          : "border-white/10 bg-white/5 text-zinc-300"
+                  }`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-current" />
+
+                  {backendStatus === "connected"
+                    ? "Connected"
+                    : backendStatus === "failed"
+                      ? "Connection failed"
+                      : backendStatus === "checking"
+                        ? "Checking..."
+                        : "Not checked"}
+                </span>
+
+                {lastChecked && (
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Last checked: {lastChecked}
+                  </p>
+                )}
+              </div>
+
               <p className="mt-3 text-sm leading-6 text-zinc-500">
-                Frontend integration is the next milestone.
+                Check whether your deployed Express API is responding.
               </p>
             </div>
 
-            <a
-              href="https://backend-course-api-fzwg.onrender.com"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-indigo-300/20 bg-indigo-500/15 px-5 py-3 text-sm font-semibold text-indigo-200 transition hover:border-indigo-300/40 hover:bg-indigo-500/25"
-            >
-              Visit backend <span aria-hidden="true">↗</span>
-            </a>
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col">
+              <button
+                type="button"
+                onClick={checkBackendConnection}
+                disabled={isChecking}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isChecking ? "Checking..." : "Check connection"}
+              </button>
+
+              <a
+                href="https://backend-course-api-fzwg.onrender.com"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-300/20 bg-indigo-500/15 px-5 py-3 text-sm font-semibold text-indigo-200 transition hover:border-indigo-300/40 hover:bg-indigo-500/25"
+              >
+                Visit backend <span aria-hidden="true">↗</span>
+              </a>
+            </div>
           </div>
         </section>
 
