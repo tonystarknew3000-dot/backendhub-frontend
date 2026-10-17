@@ -14,6 +14,15 @@ function Dashboard() {
     }
   });
 
+  function handleLogout() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+
+    setUser(null);
+    window.location.href = "/login";
+  }
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -156,12 +165,22 @@ function Dashboard() {
               <span className={`text-xs sm:text-sm ${statusColor[apiStatus]}`}>
                 {statusText[apiStatus]}
               </span>
-              <Link
-                to="/login"
-                className="rounded-lg border border-white/10 px-3 py-2 text-sm text-gray-300 transition hover:bg-white/5"
-              >
-                Sign in
-              </Link>
+              {user ? (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded-lg border border-white/10 px-3 py-2 text-sm text-gray-300 transition hover:bg-white/5"
+                >
+                  Logout
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  className="rounded-lg border border-white/10 px-3 py-2 text-sm text-gray-300 transition hover:bg-white/5"
+                >
+                  Sign in
+                </Link>
+              )}
             </div>
           </header>
 
