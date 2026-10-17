@@ -99,12 +99,18 @@ function Profile() {
 
             <div className="rounded-xl border border-white/10 bg-black/20 p-5">
               <p className="text-sm text-gray-500">Account status</p>
-              <p className="mt-2 font-medium text-amber-300">
-                {user?.isEmailVerified === true
-                  ? "Verified"
-                  : user?.isEmailVerified === false
-                    ? "Awaiting verification"
-                    : "Status unavailable"}
+              <p className="mt-2 font-medium text-emerald-300">
+                {(() => {
+                  try {
+                    const savedUser = JSON.parse(localStorage.getItem("user"));
+                    if (savedUser?.emailVerified === true) return "Verified";
+                    if (savedUser?.emailVerified === false)
+                      return "Awaiting verification";
+                    return "Status unavailable";
+                  } catch {
+                    return "Status unavailable";
+                  }
+                })()}
               </p>
             </div>
           </div>
