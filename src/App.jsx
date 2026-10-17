@@ -1,6 +1,19 @@
 import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-function App() {
+import Login from "./components/Login";
+import Register from "./components/Register";
+import ForgotPassword from "./components/ForgotPassword";
+import ResetPassword from "./components/ResetPassword";
+import VerifyEmail from "./components/VerifyEmail";
+import DashboardPage from "./components/Dashboard";
+import Profile from "./components/Profile";
+import AdminDashboard from "./components/AdminDashboard";
+import NotFound from "./components/NotFound";
+
+
+
+function Dashboard() {
   const [backendStatus, setBackendStatus] = useState("not-checked");
   const [isChecking, setIsChecking] = useState(false);
   const [lastChecked, setLastChecked] = useState("");
@@ -267,6 +280,27 @@ function App() {
         </footer>
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      
+<Routes>
+  <Route path="/" element={<Dashboard />} />
+  <Route path="/login" element={<Login />} />
+  <Route path="/register" element={<Register />} />
+  <Route path="/forgot-password" element={<ForgotPassword />} />
+  <Route path="/reset-password" element={<ResetPassword />} />
+  <Route path="/verify-email" element={<VerifyEmail />} />
+  <Route path="/dashboard" element={<DashboardPage />} />
+  <Route path="/profile" element={<Profile />} />
+  <Route path="/admin" element={<AdminDashboard />} />
+  <Route path="*" element={<NotFound />} />
+</Routes>
+
+    </BrowserRouter>
   );
 }
 
