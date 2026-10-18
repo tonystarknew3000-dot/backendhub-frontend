@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Login from "./components/Login";
 import Register from "./components/Register";
+import ProtectedRoute from "./components/ProtectedRoute";
 import ForgotPassword from "./components/ForgotPassword";
 import ResetPassword from "./components/ResetPassword";
 import VerifyEmail from "./components/VerifyEmail";
@@ -10,8 +11,6 @@ import DashboardPage from "./components/Dashboard";
 import Profile from "./components/Profile";
 import AdminDashboard from "./components/AdminDashboard";
 import NotFound from "./components/NotFound";
-
-
 
 function Dashboard() {
   const [backendStatus, setBackendStatus] = useState("not-checked");
@@ -194,7 +193,6 @@ function Dashboard() {
           ))}
         </section>
 
-       
         {/* API endpoint */}
         <section className="mt-5 overflow-hidden rounded-2xl border border-indigo-400/20 bg-gradient-to-br from-indigo-500/[0.09] via-white/[0.025] to-violet-500/[0.06]">
           <div className="flex flex-col gap-7 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:p-10">
@@ -286,20 +284,25 @@ function Dashboard() {
 function App() {
   return (
     <BrowserRouter>
-      
-<Routes>
-  <Route path="/" element={<Dashboard />} />
-  <Route path="/login" element={<Login />} />
-  <Route path="/register" element={<Register />} />
-  <Route path="/forgot-password" element={<ForgotPassword />} />
-  <Route path="/reset-password" element={<ResetPassword />} />
-  <Route path="/verify-email" element={<VerifyEmail />} />
-  <Route path="/dashboard" element={<DashboardPage />} />
-  <Route path="/profile" element={<Profile />} />
-  <Route path="/admin" element={<AdminDashboard />} />
-  <Route path="*" element={<NotFound />} />
-</Routes>
+      <Routes>
+        {/* Public pages */}
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
+        {/* Protected pages */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+        </Route>
+
+        {/* Unknown URLs */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </BrowserRouter>
   );
 }
