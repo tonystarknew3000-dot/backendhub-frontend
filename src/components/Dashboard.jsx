@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { authFetch } from "../utils/authFetch";
 
 const API_URL = "https://backend-course-api-fzwg.onrender.com";
 
 function Dashboard() {
+  const [sessionMessage, setSessionMessage] = useState("");
+  const [checkingSession, setCheckingSession] = useState(false);
   const [apiStatus, setApiStatus] = useState("checking");
   const [user, setUser] = useState(() => {
     try {
@@ -14,13 +17,65 @@ function Dashboard() {
     }
   });
 
-  function handleLogout() {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
+  async function checkSession() {
+    console.log("TEST SESSION: Button clicked");
 
-    setUser(null);
-    window.location.href = "/login";
+    setCheckingSession(true);
+    setSessionMessage("Connecting to the server...");
+
+    try {
+      const response = await authFetch("/auth/verify");
+
+      console.log("TEST SESSION: Response status:", response.status);
+
+      const result = await response.json();
+      console.log("TEST SESSION: Response data:", result);
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Session verification failed");
+      }
+
+      setSessionMessage("Session verified successfully.");
+    } catch (error) {
+      console.error("TEST SESSION ERROR:", error);
+      setSessionMessage(error.message || "Unable to verify session.");
+    } finally {
+      setCheckingSession(false);
+    }
+  }
+
+  async function handleLogout() {
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    try {
+      if (refreshToken) {
+        const response = await fetch(`${API_URL}/auth/logout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(localStorage.getItem("accessToken")
+              ? {
+                  Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+                }
+              : {}),
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        const result = await response.json();
+        console.log("LOGOUT: Response status:", response.status);
+        console.log("LOGOUT: Response data:", result);
+      }
+    } catch (error) {
+      console.error("LOGOUT: Backend request failed:", error);
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+
+      setUser(null);
+      window.location.href = "/login";
+    }
   }
 
   useEffect(() => {
@@ -214,7 +269,56 @@ function Dashboard() {
                   >
                     Explore home page
                   </Link>
+
+                  <button
+                    type="button"
+                    onClick={checkSession}
+                    disabled={checkingSession}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/5 px-5 py-3 text-sm font-semibold text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-violet-400/60 hover:bg-violet-500/15 hover:shadow-lg hover:shadow-violet-500/10 active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
+                  >
+                    {checkingSession ? (
+                      <>
+                        <svg
+                          className="h-4 w-4 animate-spin"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-90"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          />
+                        </svg>
+                        Checking session...
+                      </>
+                    ) : (
+                      <>
+                        {sessionMessage ===
+                          "Session verified successfully." && (
+                          <span aria-hidden="true" className="text-emerald-400">
+                            ✓
+                          </span>
+                        )}
+                        Test session
+                      </>
+                    )}
+                  </button>
                 </div>
+                {sessionMessage && (
+                  <p role="status" className="mt-3 text-sm text-violet-300">
+                    {sessionMessage}
+                  </p>
+                )}
               </div>
             </section>
 

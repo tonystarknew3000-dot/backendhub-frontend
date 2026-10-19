@@ -17,7 +17,7 @@ function Profile() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
 
-  const handlePasswordSubmit = (event) => {
+  const handlePasswordSubmit = async (event) => {
     event.preventDefault();
     setMessage("");
     setMessageType("");
@@ -34,10 +34,35 @@ function Profile() {
       return;
     }
 
-    setMessage(
-      "The form is ready. We'll connect it to the authenticated backend in the integration stage.",
-    );
-    setMessageType("info");
+    try {
+      const response = await authFetch("/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Unable to change password.");
+      }
+
+      setMessage(result.message || "Password changed successfully.");
+      setMessageType("success");
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowPasswordForm(false);
+    } catch (error) {
+      setMessage(error.message || "Something went wrong.");
+      setMessageType("error");
+    }
   };
 
   return (
@@ -156,7 +181,9 @@ function Profile() {
                   className={`rounded-xl border p-3 text-sm ${
                     messageType === "error"
                       ? "border-red-500/30 bg-red-500/10 text-red-300"
-                      : "border-indigo-500/30 bg-indigo-500/10 text-indigo-300"
+                      : messageType === "success"
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                        : "border-indigo-500/30 bg-indigo-500/10 text-indigo-300"
                   }`}
                 >
                   {message}
@@ -226,13 +253,13 @@ function Profile() {
                 type="submit"
                 className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3 font-semibold transition hover:brightness-110 sm:w-auto sm:px-8"
               >
-                Validate password form
+                Change password
               </button>
 
               <p className="text-xs leading-5 text-gray-500">
-                This currently validates the form only. We'll connect it to your
-                backend's authenticated change-password endpoint after
-                implementing login and token handling.
+                Your password will be changed securely through the authenticated
+                backend. If your access token expires, the app will attempt to
+                refresh it automatically.
               </p>
             </form>
           )}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 
 import Login from "./components/Login";
 import Register from "./components/Register";
@@ -101,14 +101,23 @@ function Dashboard() {
             </span>
           </div>
 
-          <a
-            href="https://github.com/tonystarknew3000-dot/backend-course"
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-indigo-400/50 hover:bg-white/5 hover:text-white"
-          >
-            GitHub ↗
-          </a>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/login"
+              className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-indigo-400"
+            >
+              Login
+            </Link>
+
+            <a
+              href="https://github.com/tonystarknew3000-dot/backend-course"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-indigo-400/50 hover:bg-white/5 hover:text-white"
+            >
+              GitHub ↗
+            </a>
+          </div>
         </nav>
       </header>
       <main className="relative z-10 mx-auto max-w-7xl px-5 pb-10 pt-16 sm:px-8 sm:pt-24 lg:px-12">
