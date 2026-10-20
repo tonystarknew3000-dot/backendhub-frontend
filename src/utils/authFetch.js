@@ -3,8 +3,13 @@ const API_URL = "https://backend-course-api-fzwg.onrender.com";
 
 let refreshPromise = null;
 
+const AUTH_ERROR_MESSAGES = new Set([
+    "A valid Bearer token is required",
+    "Invalid access token",
+    "Invalid or expired token",
+]);
+
 async function refreshAuthTokens() {
-    // Reuse an in-progress refresh to avoid rotating the token twice.
     if (refreshPromise) {
         return refreshPromise;
     }
@@ -51,12 +56,10 @@ async function refreshAuthTokens() {
             const error = new Error(
                 result.message || "Token refresh failed"
             );
-
             error.status = response.status;
             throw error;
         }
 
-        // Save BOTH tokens because the backend rotates the refresh token.
         localStorage.setItem("accessToken", result.data.accessToken);
         localStorage.setItem("refreshToken", result.data.refreshToken);
 
@@ -85,8 +88,21 @@ async function authFetch(path, options = {}) {
         headers,
     });
 
-    // Refresh only when a protected request returns 401.
     if (response.status !== 401) {
+        return response;
+    }
+
+    // Inspect a copy so the original response body remains readable.
+    let result = {};
+
+    try {
+        result = await response.clone().json();
+    } catch {
+        return response;
+    }
+
+    // Do not refresh for unrelated errors such as incorrect passwords.
+    if (!AUTH_ERROR_MESSAGES.has(result.message)) {
         return response;
     }
 
@@ -96,7 +112,6 @@ async function authFetch(path, options = {}) {
         const retryHeaders = new Headers(options.headers || {});
         retryHeaders.set("Authorization", `Bearer ${newAccessToken}`);
 
-        // Retry the original request once.
         response = await fetch(`${API_URL}${path}`, {
             ...options,
             headers: retryHeaders,
@@ -112,16 +127,13 @@ async function authFetch(path, options = {}) {
 
         return response;
     } catch (error) {
-        // Clear the session only for authentication failures.
         if (error.status === 401) {
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
             localStorage.removeItem("user");
-
             window.location.assign("/login");
         }
 
-        // For network errors and server errors, preserve the session.
         throw error;
     }
 }
