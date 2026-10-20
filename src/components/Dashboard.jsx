@@ -56,7 +56,7 @@ function Dashboard() {
             ...(localStorage.getItem("accessToken")
               ? {
                   Authorization: `Bearer ${localStorage.getItem(
-                    "accessToken"
+                    "accessToken",
                   )}`,
                 }
               : {}),
@@ -143,8 +143,7 @@ function Dashboard() {
     {
       icon: "◇",
       title: "Administration",
-      description:
-        "Access administrative tools if your account is authorized.",
+      description: "Access administrative tools if your account is authorized.",
       link: "/admin",
       action: "Open admin",
     },
@@ -289,10 +288,7 @@ function Dashboard() {
                   <span className="px-0.5">Logout</span>
                 </button>
               ) : (
-                <Link
-                  to="/login"
-                  className={`${secondaryButton} px-3 py-2`}
-                >
+                <Link to="/login" className={`${secondaryButton} px-3 py-2`}>
                   <span className="px-0.5">Sign in</span>
                 </Link>
               )}
@@ -338,7 +334,9 @@ function Dashboard() {
                 <div className="mt-7 flex flex-wrap gap-3">
                   <Link to="/profile" className={primaryButton}>
                     <span className="px-0.5">View my profile</span>
-                    <span aria-hidden="true" className="shrink-0">→</span>
+                    <span aria-hidden="true" className="shrink-0">
+                      →
+                    </span>
                   </Link>
 
                   <Link to="/" className={secondaryButton}>
@@ -378,8 +376,12 @@ function Dashboard() {
                       </>
                     ) : (
                       <>
-                        {sessionMessage === "Session verified successfully." && (
-                          <span aria-hidden="true" className="shrink-0 text-emerald-300">
+                        {sessionMessage ===
+                          "Session verified successfully." && (
+                          <span
+                            aria-hidden="true"
+                            className="shrink-0 text-emerald-300"
+                          >
                             ✓
                           </span>
                         )}
@@ -432,7 +434,9 @@ function Dashboard() {
 
               <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {/* API card */}
-                <article className={`${glassCard} relative min-w-0 overflow-hidden p-5 sm:p-6`}>
+                <article
+                  className={`${glassCard} relative min-w-0 overflow-hidden p-5 sm:p-6`}
+                >
                   <div
                     aria-hidden="true"
                     className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-violet-500/[0.12] blur-3xl"
@@ -456,7 +460,9 @@ function Dashboard() {
                   </p>
 
                   <div className="relative mt-3 flex items-start gap-2 px-1">
-                    <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${statusDot[apiStatus]}`} />
+                    <span
+                      className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${statusDot[apiStatus]}`}
+                    />
                     <p className="min-w-0 py-0.5 text-xs leading-5 text-gray-400">
                       Health endpoint response
                     </p>
@@ -464,7 +470,9 @@ function Dashboard() {
                 </article>
 
                 {/* User card */}
-                <article className={`${glassCard} relative min-w-0 overflow-hidden p-5 sm:p-6`}>
+                <article
+                  className={`${glassCard} relative min-w-0 overflow-hidden p-5 sm:p-6`}
+                >
                   <div
                     aria-hidden="true"
                     className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-indigo-500/[0.12] blur-3xl"
@@ -496,7 +504,9 @@ function Dashboard() {
                 </article>
 
                 {/* Security card */}
-                <article className={`${glassCard} relative min-w-0 overflow-hidden p-5 sm:col-span-2 sm:p-6 xl:col-span-1`}>
+                <article
+                  className={`${glassCard} relative min-w-0 overflow-hidden p-5 sm:col-span-2 sm:p-6 xl:col-span-1`}
+                >
                   <div
                     aria-hidden="true"
                     className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-fuchsia-500/[0.10] blur-3xl"
@@ -512,11 +522,11 @@ function Dashboard() {
                   </div>
 
                   <p className="relative mt-5 px-1 py-1 text-2xl font-bold leading-tight tracking-tight">
-                    Setup pending
+                    Authentication enabled
                   </p>
 
                   <p className="relative mt-3 px-1 py-1 text-xs leading-6 text-gray-400">
-                    Protected routes and session management come next.
+                    Login, protected routes, and token refresh are implemented.
                   </p>
                 </article>
               </div>
@@ -570,7 +580,9 @@ function Dashboard() {
                       className="relative mt-5 inline-flex max-w-full items-center gap-2 px-1 py-1 text-sm font-semibold text-violet-300 transition-all duration-200 hover:gap-3 hover:text-violet-200"
                     >
                       <span className="break-words">{feature.action}</span>
-                      <span aria-hidden="true" className="shrink-0">→</span>
+                      <span aria-hidden="true" className="shrink-0">
+                        →
+                      </span>
                     </Link>
                   </article>
                 ))}
