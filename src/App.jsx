@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 
@@ -56,8 +55,7 @@ function Dashboard() {
       description:
         "Your interface, built with React and styled with Tailwind CSS.",
       status: "Frontend layer",
-      statusColor:
-        "border-violet-400/20 bg-violet-400/10 text-violet-300",
+      statusColor: "border-violet-400/20 bg-violet-400/10 text-violet-300",
       icon: "◈",
       iconColor: "bg-violet-500/10 text-violet-300",
     },
@@ -67,27 +65,23 @@ function Dashboard() {
       description:
         "Your REST API, authentication, middleware, and business logic.",
       status: "Deployed API",
-      statusColor:
-        "border-indigo-400/20 bg-indigo-400/10 text-indigo-300",
+      statusColor: "border-indigo-400/20 bg-indigo-400/10 text-indigo-300",
       icon: "⌘",
       iconColor: "bg-indigo-500/10 text-indigo-300",
     },
     {
       number: "03",
       title: "MongoDB Atlas",
-      description:
-        "Your application data stays behind your Express backend.",
+      description: "Your application data stays behind your Express backend.",
       status: "Access through API",
-      statusColor:
-        "border-sky-400/20 bg-sky-400/10 text-sky-300",
+      statusColor: "border-sky-400/20 bg-sky-400/10 text-sky-300",
       icon: "▤",
       iconColor: "bg-sky-500/10 text-sky-300",
     },
   ];
 
   const statusStyles = {
-    connected:
-      "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+    connected: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
     failed: "border-red-400/20 bg-red-400/10 text-red-300",
     checking: "border-amber-400/20 bg-amber-400/10 text-amber-300",
     "not-checked": "border-white/10 bg-white/[0.04] text-gray-300",
@@ -282,8 +276,8 @@ function Dashboard() {
 
               <p className="mt-4 max-w-xl text-sm leading-7 text-gray-500">
                 Check whether your deployed Express API is responding to
-                requests. This checks the backend health endpoint, not
-                whether every application feature is working.
+                requests. This checks the backend health endpoint, not whether
+                every application feature is working.
               </p>
             </div>
 
@@ -368,6 +362,10 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<Profile />} />
+        </Route>
+
+        {/* Admin-only page */}
+        <Route element={<ProtectedRoute requiredRole="admin" />}>
           <Route path="/admin" element={<AdminDashboard />} />
         </Route>
 
