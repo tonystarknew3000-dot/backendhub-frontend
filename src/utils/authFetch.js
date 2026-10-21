@@ -85,6 +85,7 @@ async function authFetch(path, options = {}) {
 
     let response = await fetch(`${API_URL}${path}`, {
         ...options,
+        cache: "no-store",
         headers,
     });
 
@@ -114,6 +115,7 @@ async function authFetch(path, options = {}) {
 
         response = await fetch(`${API_URL}${path}`, {
             ...options,
+            cache: "no-store",
             headers: retryHeaders,
         });
 

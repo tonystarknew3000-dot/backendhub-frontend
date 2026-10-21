@@ -1,14 +1,90 @@
-
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { authFetch } from "../utils/authFetch";
 
 function AdminDashboard() {
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState("");
+  const [userSearch, setUserSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [verificationFilter, setVerificationFilter] = useState("all");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  const [totalUsers, setTotalUsers] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUsers() {
+      try {
+        setUsersLoading(true);
+        setUsersError("");
+
+        const params = new URLSearchParams({
+          search: userSearch.trim(),
+          role: roleFilter,
+          verification: verificationFilter,
+          page: String(currentPage),
+          limit: "10",
+        });
+
+        const response = await authFetch(`/admin/users?${params.toString()}`);
+
+        let result;
+
+        try {
+          result = await response.json();
+        } catch {
+          throw new Error("The server returned an invalid response.");
+        }
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Unable to load user accounts.");
+        }
+
+        if (!Array.isArray(result.data) || !result.pagination) {
+          throw new Error("The server returned an unexpected user list.");
+        }
+
+        if (!cancelled) {
+          setUsers(result.data);
+          setPagination(result.pagination);
+          setTotalUsers(result.totalUsers ?? 0);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setUsersError(error.message || "Unable to load user accounts.");
+        }
+      } finally {
+        if (!cancelled) {
+          setUsersLoading(false);
+        }
+      }
+    }
+
+    loadUsers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userSearch, roleFilter, verificationFilter, currentPage]);
+
   const sections = [
     {
       icon: "👥",
       title: "User Management",
-      description:
-        "View and manage user accounts through authorized backend endpoints.",
-      status: "Integration pending",
+      description: "View accounts returned by your protected admin API.",
+      status: "User accounts",
     },
     {
       icon: "🛡️",
@@ -80,9 +156,10 @@ function AdminDashboard() {
               </span>
             </h1>
 
-            <p className={`mt-3 max-w-xl px-1 text-sm leading-7 text-gray-400 sm:text-base ${textSafe}`}>
-              Administrative tools and system management in one
-              workspace.
+            <p
+              className={`mt-3 max-w-xl px-1 text-sm leading-7 text-gray-400 sm:text-base ${textSafe}`}
+            >
+              Administrative tools and system management in one workspace.
             </p>
           </div>
 
@@ -155,11 +232,12 @@ function AdminDashboard() {
               Administrative workspace
             </h2>
 
-            <p className={`mt-3 max-w-2xl px-0.5 text-sm leading-7 text-gray-300/90 sm:text-base ${textSafe}`}>
-              This interface is prepared for your administrative features.
-              Real user data and management actions will be connected to
-              your backend after authentication and authorization are
-              implemented.
+            <p
+              className={`mt-3 max-w-2xl px-0.5 text-sm leading-7 text-gray-300/90 sm:text-base ${textSafe}`}
+            >
+              Your administrative workspace is connected to the backend. User
+              account information is loaded through a protected endpoint and
+              remains subject to server-side authorization.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -187,8 +265,8 @@ function AdminDashboard() {
             </h2>
 
             <p className="mt-2 max-w-2xl text-sm leading-7 text-gray-400">
-              These sections are interface placeholders until connected
-              to authorized backend endpoints.
+              User Management is connected to your backend. Other tools will be
+              connected when their endpoints are ready.
             </p>
           </div>
 
@@ -218,16 +296,235 @@ function AdminDashboard() {
                     {section.title}
                   </h3>
 
-                  <p className={`mt-3 min-h-16 px-0.5 text-sm leading-7 text-gray-400 ${textSafe}`}>
+                  <p
+                    className={`mt-3 min-h-16 px-0.5 text-sm leading-7 text-gray-400 ${textSafe}`}
+                  >
                     {section.description}
                   </p>
 
                   <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/[0.08] pt-4">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300 shadow-[0_0_8px_rgba(252,211,77,0.25)]" />
+                    <span
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                        section.title === "User Management" &&
+                        !usersLoading &&
+                        !usersError
+                          ? "bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.25)]"
+                          : "bg-amber-300 shadow-[0_0_8px_rgba(252,211,77,0.25)]"
+                      }`}
+                    />
                     <span className="text-xs font-medium leading-6 text-amber-200/90">
-                      {section.status}
+                      {section.title === "User Management"
+                        ? usersLoading
+                          ? "Loading accounts…"
+                          : usersError
+                            ? "Unable to load accounts"
+                            : `${totalUsers} total account${totalUsers === 1 ? "" : "s"}`
+                        : section.status}
                     </span>
                   </div>
+
+                  {section.title === "User Management" && (
+                    <div className="mt-4 border-t border-white/[0.08] pt-4">
+                      {usersLoading ? (
+                        <p
+                          className="text-sm leading-6 text-gray-400"
+                          role="status"
+                        >
+                          Loading user accounts…
+                        </p>
+                      ) : usersError ? (
+                        <div
+                          className="rounded-xl border border-red-400/20 bg-red-400/[0.06] p-3"
+                          role="alert"
+                        >
+                          <p className="text-sm leading-6 text-red-200">
+                            {usersError}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => window.location.reload()}
+                            className={`${secondaryButton} mt-3`}
+                          >
+                            Try again
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <label
+                            htmlFor="admin-user-search"
+                            className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-gray-400"
+                          >
+                            Search users
+                          </label>
+                          <input
+                            id="admin-user-search"
+                            type="search"
+                            value={userSearch}
+                            onChange={(event) => {
+                              setUserSearch(event.target.value);
+                              setCurrentPage(1);
+                            }}
+                            placeholder="Search by username, email, or role…"
+                            autoComplete="off"
+                            className="mb-4 min-h-11 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none placeholder:text-gray-500 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20"
+                          />
+
+                          <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label
+                                htmlFor="admin-role-filter"
+                                className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-gray-400"
+                              >
+                                Filter by role
+                              </label>
+
+                              <select
+                                id="admin-role-filter"
+                                value={roleFilter}
+                                onChange={(event) => {
+                                  setRoleFilter(event.target.value);
+                                  setCurrentPage(1);
+                                }}
+                                className="min-h-11 w-full rounded-xl border border-white/10 bg-[#111018] px-3 py-2.5 text-sm text-white outline-none focus:border-violet-400/60"
+                              >
+                                <option value="all">All roles</option>
+                                <option value="admin">Administrators</option>
+                                <option value="user">Regular users</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label
+                                htmlFor="admin-verification-filter"
+                                className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-gray-400"
+                              >
+                                Email verification
+                              </label>
+
+                              <select
+                                id="admin-verification-filter"
+                                value={verificationFilter}
+                                onChange={(event) => {
+                                  setVerificationFilter(event.target.value);
+                                  setCurrentPage(1);
+                                }}
+                                className="min-h-11 w-full rounded-xl border border-white/10 bg-[#111018] px-3 py-2.5 text-sm text-white outline-none focus:border-violet-400/60"
+                              >
+                                <option value="all">All accounts</option>
+                                <option value="verified">Verified</option>
+                                <option value="unverified">Not verified</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
+                            {userSearch.trim() ||
+                            roleFilter !== "all" ||
+                            verificationFilter !== "all"
+                              ? `${pagination.total} matching account${pagination.total === 1 ? "" : "s"}`
+                              : `${pagination.total} accounts`}
+                          </p>
+                          {users.length === 0 ? (
+                            <p className="rounded-xl border border-white/[0.07] bg-black/20 p-3 text-sm leading-6 text-gray-400">
+                              No accounts match your current search and filters.
+                              Try changing them.
+                            </p>
+                          ) : (
+                            <>
+                              <ul className="space-y-3">
+                                {users.map((user, userIndex) => (
+                                  <li
+                                    key={
+                                      user._id ||
+                                      user.id ||
+                                      user.email ||
+                                      userIndex
+                                    }
+                                    className="rounded-xl border border-white/[0.07] bg-black/20 p-3"
+                                  >
+                                    <p className="break-words text-sm font-semibold text-gray-100">
+                                      {user.username ||
+                                        user.name ||
+                                        "Unnamed user"}
+                                    </p>
+                                    <p className="mt-1 break-all text-xs leading-5 text-gray-400">
+                                      {user.email || "No email provided"}
+                                    </p>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                      {user.role && (
+                                        <span className="rounded-md border border-violet-300/15 bg-violet-400/[0.08] px-2 py-1 text-[10px] font-medium text-violet-200">
+                                          {user.role}
+                                        </span>
+                                      )}
+                                      <span
+                                        className={`rounded-md border px-2 py-1 text-[10px] font-medium ${
+                                          user.emailVerified
+                                            ? "border-emerald-300/15 bg-emerald-400/[0.07] text-emerald-200"
+                                            : "border-amber-300/15 bg-amber-400/[0.07] text-amber-200"
+                                        }`}
+                                      >
+                                        {user.emailVerified
+                                          ? "Email verified"
+                                          : "Email not verified"}
+                                      </span>
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+
+                              <div className="mt-4 border-t border-white/[0.08] pt-4">
+                                <p className="mb-3 text-xs leading-5 text-gray-400">
+                                  Showing{" "}
+                                  {users.length === 0
+                                    ? 0
+                                    : (pagination.page - 1) * pagination.limit +
+                                      1}
+                                  {"–"}
+                                  {(pagination.page - 1) * pagination.limit +
+                                    users.length}
+                                  {" of "}
+                                  {pagination.total} matching accounts
+                                </p>
+
+                                <div className="flex items-center justify-between gap-3">
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      !pagination.hasPrevPage || usersLoading
+                                    }
+                                    onClick={() =>
+                                      setCurrentPage((page) => page - 1)
+                                    }
+                                    className={`${secondaryButton} disabled:cursor-not-allowed disabled:opacity-40`}
+                                  >
+                                    ← Previous
+                                  </button>
+
+                                  <span className="text-xs text-gray-400">
+                                    Page {pagination.page} of{" "}
+                                    {Math.max(1, pagination.totalPages)}
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      !pagination.hasNextPage || usersLoading
+                                    }
+                                    onClick={() =>
+                                      setCurrentPage((page) => page + 1)
+                                    }
+                                    className={`${secondaryButton} disabled:cursor-not-allowed disabled:opacity-40`}
+                                  >
+                                    Next →
+                                  </button>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </article>
             ))}
@@ -265,10 +562,10 @@ function AdminDashboard() {
               </h2>
 
               <p className="mt-2 text-sm leading-7 text-gray-400">
-                Hiding this page in the frontend is not sufficient to
-                secure administrator features. Every administrative API
-                request must be authorized by the backend using the
-                authenticated user's role and permissions.
+                Hiding this page in the frontend is not sufficient to secure
+                administrator features. Every administrative API request must be
+                authorized by the backend using the authenticated user's role
+                and permissions.
               </p>
             </div>
           </div>
