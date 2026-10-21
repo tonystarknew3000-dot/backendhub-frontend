@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { authFetch } from "../utils/authFetch";
+const AVAILABLE_PERMISSIONS = [
+  "create:user",
+  "read:user",
+  "update:user",
+  "delete:user",
+];
 
 function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState("");
   const [userSearch, setUserSearch] = useState("");
+  const [usersReloadKey, setUsersReloadKey] = useState(0);
   const [roleFilter, setRoleFilter] = useState("all");
   const [verificationFilter, setVerificationFilter] = useState("all");
 
@@ -21,6 +28,18 @@ function AdminDashboard() {
   });
 
   const [totalUsers, setTotalUsers] = useState(0);
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const [deletingUserId, setDeletingUserId] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteSuccess, setDeleteSuccess] = useState("");
+  const [userToDelete, setUserToDelete] = useState(null);
+
+  const [accessUser, setAccessUser] = useState(null);
+  const [accessRole, setAccessRole] = useState("user");
+  const [accessPermissions, setAccessPermissions] = useState([]);
+  const [accessSaving, setAccessSaving] = useState(false);
+  const [accessError, setAccessError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -77,8 +96,144 @@ function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [userSearch, roleFilter, verificationFilter, currentPage]);
+  }, [userSearch, roleFilter, verificationFilter, currentPage, usersReloadKey]);
 
+  async function handleDeleteUser() {
+    if (!userToDelete || deletingUserId) {
+      return;
+    }
+
+    const userId = userToDelete._id || userToDelete.id;
+
+    if (!userId) {
+      setDeleteError("Cannot delete this account because its ID is missing.");
+      return;
+    }
+
+    try {
+      setDeletingUserId(userId);
+      setDeleteError("");
+      setDeleteSuccess("");
+
+      const response = await authFetch(
+        `/admin/users/${encodeURIComponent(userId)}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      let result;
+
+      try {
+        result = await response.json();
+      } catch {
+        throw new Error("The server returned an invalid response.");
+      }
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Unable to delete this account.");
+      }
+
+      setUsers((currentUsers) =>
+        currentUsers.filter((user) => (user._id || user.id) !== userId),
+      );
+
+      setTotalUsers((total) => Math.max(0, total - 1));
+      setPagination((current) => ({
+        ...current,
+        total: Math.max(0, current.total - 1),
+      }));
+
+      setSelectedUser((current) =>
+        current && (current._id || current.id) === userId ? null : current,
+      );
+
+      setUserToDelete(null);
+      setDeleteSuccess(result.message || "Account deleted successfully.");
+
+      // If the deleted account was the only item on this page,
+      // move back one page when possible.
+      if (users.length === 1 && currentPage > 1) {
+        setCurrentPage((page) => page - 1);
+      } else {
+        setUsersReloadKey((key) => key + 1);
+      }
+    } catch (error) {
+      setDeleteError(error.message || "Unable to delete this account.");
+    } finally {
+      setDeletingUserId(null);
+    }
+  }
+
+  async function handleSaveAccess() {
+    if (!accessUser || accessSaving) return;
+
+    const userId = accessUser._id || accessUser.id;
+
+    if (!userId) {
+      setAccessError("Cannot update this account because its ID is missing.");
+      return;
+    }
+
+    try {
+      setAccessSaving(true);
+      setAccessError("");
+
+      const response = await authFetch(
+        `/admin/users/${encodeURIComponent(userId)}/access`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            role: accessRole,
+            permissions: accessPermissions,
+          }),
+        },
+      );
+
+      let result;
+
+      try {
+        result = await response.json();
+      } catch {
+        throw new Error("The server returned an invalid response.");
+      }
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Unable to update account access.");
+      }
+
+      const updatedUser = {
+        ...accessUser,
+        ...result.data,
+        _id: result.data?.id || accessUser._id || accessUser.id,
+      };
+
+      setUsers((currentUsers) =>
+        currentUsers.map((user) =>
+          (user._id || user.id) === userId ? { ...user, ...updatedUser } : user,
+        ),
+      );
+
+      setSelectedUser((current) =>
+        current && (current._id || current.id) === userId
+          ? { ...current, ...updatedUser }
+          : current,
+      );
+
+      setAccessUser(null);
+      setUsersReloadKey((key) => key + 1);
+      setDeleteSuccess(
+        result.message || "Account access updated successfully.",
+      );
+    } catch (error) {
+      setAccessError(error.message || "Unable to update account access.");
+    } finally {
+      setAccessSaving(false);
+    }
+  }
   const sections = [
     {
       icon: "👥",
@@ -468,6 +623,47 @@ function AdminDashboard() {
                                           : "Email not verified"}
                                       </span>
                                     </div>
+
+                                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedUser(user)}
+                                        className={secondaryButton}
+                                      >
+                                        View Details →
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setAccessUser(user);
+                                          setAccessRole(user.role || "user");
+                                          setAccessPermissions(
+                                            Array.isArray(user.permissions)
+                                              ? [...user.permissions]
+                                              : [],
+                                          );
+                                          setAccessError("");
+                                        }}
+                                        disabled={accessSaving}
+                                        className={secondaryButton}
+                                      >
+                                        Edit Access
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setDeleteError("");
+                                          setDeleteSuccess("");
+                                          setUserToDelete(user);
+                                        }}
+                                        disabled={Boolean(deletingUserId)}
+                                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-500/[0.08] px-4 py-2.5 text-sm font-medium text-red-200 transition-colors hover:border-red-400/40 hover:bg-red-500/[0.15] disabled:cursor-not-allowed disabled:opacity-50"
+                                      >
+                                        Delete Account
+                                      </button>
+                                    </div>
                                   </li>
                                 ))}
                               </ul>
@@ -530,6 +726,369 @@ function AdminDashboard() {
             ))}
           </div>
         </section>
+
+        {/* Edit Account Access Modal */}
+        {accessUser && (
+          <div
+            className="fixed inset-0 z-[65] flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm"
+            onClick={() => {
+              if (!accessSaving) setAccessUser(null);
+            }}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-access-title"
+              onClick={(event) => event.stopPropagation()}
+              className="my-auto w-full max-w-lg rounded-2xl border border-violet-300/20 bg-[#111018] p-6 shadow-2xl"
+            >
+              <h2
+                id="edit-access-title"
+                className="text-xl font-bold text-white"
+              >
+                Edit Account Access
+              </h2>
+
+              <p className="mt-2 break-words text-sm text-gray-400">
+                Update the role and permissions for{" "}
+                <strong className="text-violet-200">
+                  {accessUser.username || accessUser.email || "this account"}
+                </strong>
+                .
+              </p>
+
+              <div className="mt-6">
+                <label
+                  htmlFor="edit-access-role"
+                  className="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-400"
+                >
+                  Account role
+                </label>
+
+                <select
+                  id="edit-access-role"
+                  value={accessRole}
+                  onChange={(event) => setAccessRole(event.target.value)}
+                  disabled={accessSaving}
+                  className="min-h-11 w-full rounded-xl border border-white/10 bg-[#111018] px-3 py-2.5 text-sm text-white outline-none focus:border-violet-400/60 disabled:opacity-50"
+                >
+                  <option value="user">Regular user</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+
+              <fieldset className="mt-6">
+                <legend className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Permissions
+                </legend>
+
+                <p className="mt-2 text-xs leading-5 text-gray-500">
+                  Select the permissions this account should have.
+                </p>
+
+                <div className="mt-3 space-y-3">
+                  {AVAILABLE_PERMISSIONS.map((permission) => (
+                    <label
+                      key={permission}
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] p-3 text-sm text-gray-200"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={accessPermissions.includes(permission)}
+                        disabled={accessSaving}
+                        onChange={(event) => {
+                          setAccessPermissions((current) =>
+                            event.target.checked
+                              ? [...current, permission]
+                              : current.filter((item) => item !== permission),
+                          );
+                        }}
+                        className="h-4 w-4 accent-violet-500"
+                      />
+                      <span>{permission}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              {accessError && (
+                <p
+                  role="alert"
+                  className="mt-4 rounded-xl border border-red-400/20 bg-red-400/[0.07] p-3 text-sm text-red-200"
+                >
+                  {accessError}
+                </p>
+              )}
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  disabled={accessSaving}
+                  onClick={() => setAccessUser(null)}
+                  className={secondaryButton}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  disabled={accessSaving}
+                  onClick={handleSaveAccess}
+                  className={`${primaryButton} disabled:cursor-not-allowed disabled:opacity-50`}
+                >
+                  {accessSaving ? "Saving…" : "Save Access"}
+                </button>
+              </div>
+
+              <p className="mt-4 text-xs leading-5 text-amber-200/80">
+                You cannot change your own role or permissions through this
+                endpoint. The backend enforces this restriction.
+              </p>
+            </section>
+          </div>
+        )}
+        {/* Delete Account Confirmation */}
+        {userToDelete && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+            onClick={() => {
+              if (!deletingUserId) setUserToDelete(null);
+            }}
+          >
+            <section
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="delete-account-title"
+              aria-describedby="delete-account-description"
+              onClick={(event) => event.stopPropagation()}
+              className="w-full max-w-md rounded-2xl border border-red-400/20 bg-[#111018] p-6 shadow-2xl"
+            >
+              <h2
+                id="delete-account-title"
+                className="text-xl font-bold text-white"
+              >
+                Delete this account?
+              </h2>
+
+              <p
+                id="delete-account-description"
+                className="mt-3 break-words text-sm leading-7 text-gray-300"
+              >
+                You are about to permanently delete{" "}
+                <strong className="text-white">
+                  {userToDelete.username ||
+                    userToDelete.email ||
+                    "this account"}
+                </strong>
+                . This action cannot be undone.
+              </p>
+
+              {deleteError && (
+                <p
+                  className="mt-4 rounded-xl border border-red-400/20 bg-red-400/[0.07] p-3 text-sm text-red-200"
+                  role="alert"
+                >
+                  {deleteError}
+                </p>
+              )}
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  disabled={Boolean(deletingUserId)}
+                  onClick={() => setUserToDelete(null)}
+                  className={secondaryButton}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  disabled={Boolean(deletingUserId)}
+                  onClick={handleDeleteUser}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-red-400/30 bg-red-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deletingUserId ? "Deleting…" : "Confirm Delete"}
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {deleteSuccess && (
+          <div
+            role="status"
+            className="fixed bottom-5 right-5 z-[70] max-w-sm rounded-xl border border-emerald-400/20 bg-[#111018] p-4 text-sm text-emerald-200 shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p>{deleteSuccess}</p>
+              <button
+                type="button"
+                onClick={() => setDeleteSuccess("")}
+                aria-label="Dismiss success message"
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+        {/* Selected User Details Modal */}
+        {selectedUser && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm"
+            onClick={() => setSelectedUser(null)}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="user-details-title"
+              onClick={(event) => event.stopPropagation()}
+              className="my-auto w-full max-w-lg rounded-2xl border border-violet-300/20 bg-[#111018] p-6 shadow-2xl shadow-violet-950/30"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">
+                    BackendHub Administration
+                  </p>
+
+                  <h2
+                    id="user-details-title"
+                    className="mt-2 text-2xl font-bold text-white"
+                  >
+                    User Details
+                  </h2>
+
+                  <p className="mt-2 text-sm text-gray-400">
+                    Account information and permissions.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedUser(null)}
+                  aria-label="Close user details"
+                  className={secondaryButton}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                    Username
+                  </p>
+                  <p className="mt-2 break-words text-sm font-semibold text-white">
+                    {selectedUser.username ||
+                      selectedUser.name ||
+                      "Not available"}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                    Email address
+                  </p>
+                  <p className="mt-2 break-all text-sm text-white">
+                    {selectedUser.email || "Not available"}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                    Account ID
+                  </p>
+                  <p className="mt-2 break-all font-mono text-xs text-gray-300">
+                    {selectedUser._id || selectedUser.id || "Not available"}
+                  </p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                      Role
+                    </p>
+                    <p className="mt-2 text-sm font-semibold capitalize text-violet-200">
+                      {selectedUser.role || "Not assigned"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                      Email verification
+                    </p>
+                    <p
+                      className={`mt-2 text-sm font-semibold ${
+                        selectedUser.emailVerified
+                          ? "text-emerald-300"
+                          : "text-amber-300"
+                      }`}
+                    >
+                      {selectedUser.emailVerified ? "Verified" : "Not verified"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                    Permissions
+                  </p>
+
+                  {Array.isArray(selectedUser.permissions) &&
+                  selectedUser.permissions.length > 0 ? (
+                    <ul className="mt-3 flex flex-wrap gap-2">
+                      {selectedUser.permissions.map((permission) => (
+                        <li
+                          key={permission}
+                          className="rounded-lg border border-violet-300/15 bg-violet-400/[0.08] px-3 py-1.5 text-xs text-violet-200"
+                        >
+                          {permission}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-sm text-gray-400">
+                      No permissions assigned.
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                      Created
+                    </p>
+                    <p className="mt-2 text-sm text-gray-200">
+                      {selectedUser.createdAt
+                        ? new Date(selectedUser.createdAt).toLocaleString()
+                        : "Not available"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                      Last updated
+                    </p>
+                    <p className="mt-2 text-sm text-gray-200">
+                      {selectedUser.updatedAt
+                        ? new Date(selectedUser.updatedAt).toLocaleString()
+                        : "Not available"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedUser(null)}
+                className={`${primaryButton} mt-6 w-full`}
+              >
+                Close Details
+              </button>
+            </section>
+          </div>
+        )}
 
         {/* Security reminder */}
         <section className="relative mt-8 overflow-hidden rounded-2xl border border-violet-300/[0.12] bg-white/[0.025] p-5 shadow-[0_8px_32px_rgba(0,0,0,0.15)] backdrop-blur-xl sm:p-6">
