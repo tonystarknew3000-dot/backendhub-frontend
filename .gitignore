@@ -28,3 +28,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Local authentication backup - do not commit
+/src/utils/authFetch.js.password-change-backup
