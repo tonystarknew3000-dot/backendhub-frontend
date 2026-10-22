@@ -13,6 +13,7 @@ function AdminDashboard() {
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState("");
   const [userSearch, setUserSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [usersReloadKey, setUsersReloadKey] = useState(0);
   const [roleFilter, setRoleFilter] = useState("all");
   const [verificationFilter, setVerificationFilter] = useState("all");
@@ -42,6 +43,16 @@ function AdminDashboard() {
   const [accessError, setAccessError] = useState("");
 
   useEffect(() => {
+  const timeoutId = setTimeout(() => {
+    setDebouncedSearch(userSearch);
+  }, 300);
+
+  return () => {
+    clearTimeout(timeoutId);
+  };
+}, [userSearch]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadUsers() {
@@ -49,7 +60,7 @@ function AdminDashboard() {
         setUsersError("");
 
         const params = new URLSearchParams({
-          search: userSearch.trim(),
+          search: debouncedSearch.trim(),
           role: roleFilter,
           verification: verificationFilter,
           page: String(currentPage),
@@ -95,7 +106,7 @@ function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [userSearch, roleFilter, verificationFilter, currentPage, usersReloadKey]);
+  }, [debouncedSearch, roleFilter, verificationFilter, currentPage, usersReloadKey]);
 
   async function handleDeleteUser() {
     if (!userToDelete || deletingUserId) {
