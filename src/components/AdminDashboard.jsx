@@ -46,7 +46,6 @@ function AdminDashboard() {
 
     async function loadUsers() {
       try {
-        setUsersLoading(true);
         setUsersError("");
 
         const params = new URLSearchParams({
