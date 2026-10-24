@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { authFetch } from "../utils/authFetch";
+import CursorBackground from "../components/CursorBackground";
 
 const API_URL = "https://backend-course-api-fzwg.onrender.com";
 
@@ -160,6 +161,7 @@ function Dashboard() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#070611] text-white selection:bg-violet-500/30">
+        <CursorBackground />
       {/* Ambient background lighting */}
       <div
         aria-hidden="true"
@@ -170,7 +172,7 @@ function Dashboard() {
         <div className="absolute bottom-[-12rem] left-[35%] h-[28rem] w-[28rem] rounded-full bg-fuchsia-700/[0.07] blur-[120px]" />
       </div>
 
-      <div className="relative flex min-h-screen">
+      <div className="relative z-10 flex min-h-screen">
         {/* Sidebar */}
         <aside className="hidden w-64 shrink-0 border-r border-white/[0.08] bg-[#0b0918]/70 p-6 backdrop-blur-2xl md:flex md:flex-col">
           <Link

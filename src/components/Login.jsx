@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import MagneticParticles from "../components/MagneticParticles";
+import ParticleText from "../components/ParticleText";
 
 function Login() {
   const navigate = useNavigate();
@@ -28,7 +30,7 @@ function Login() {
             email: email.trim(),
             password,
           }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -40,9 +42,7 @@ function Login() {
       }
 
       if (!data.data?.accessToken || !data.data?.refreshToken) {
-        setMessage(
-          "The server response did not contain the expected tokens."
-        );
+        setMessage("The server response did not contain the expected tokens.");
         setMessageType("error");
         return;
       }
@@ -63,6 +63,7 @@ function Login() {
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-x-hidden bg-[#050507] px-4 py-12 text-white selection:bg-violet-500/30 sm:px-6 sm:py-16 lg:px-8">
+      <MagneticParticles />
       {/* Ambient violet lighting */}
       <div
         aria-hidden="true"
@@ -84,11 +85,8 @@ function Login() {
             B
           </span>
 
-          <span className="px-1 text-2xl font-bold tracking-tight">
-            Backend
-            <span className="bg-gradient-to-r from-violet-300 to-indigo-300 bg-clip-text text-transparent">
-              Hub
-            </span>
+          <span className="block w-full max-w-[280px] min-w-0 sm:max-w-[340px]">
+            <ParticleText />
           </span>
         </Link>
 
@@ -227,10 +225,7 @@ function Login() {
                       strokeWidth="1.6"
                     >
                       <rect x="4" y="10" width="16" height="11" rx="2" />
-                      <path
-                        strokeLinecap="round"
-                        d="M8 10V7a4 4 0 118 0v3"
-                      />
+                      <path strokeLinecap="round" d="M8 10V7a4 4 0 118 0v3" />
                     </svg>
                   </span>
 
@@ -287,9 +282,7 @@ function Login() {
                         d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                       />
                     </svg>
-                    <span className="min-w-0 break-words">
-                      Signing in...
-                    </span>
+                    <span className="min-w-0 break-words">Signing in...</span>
                   </>
                 ) : (
                   <>
@@ -316,10 +309,7 @@ function Login() {
                     : "border-red-400/20 bg-red-400/[0.06] text-red-200"
                 }`}
               >
-                <span
-                  aria-hidden="true"
-                  className="mt-0.5 shrink-0 font-bold"
-                >
+                <span aria-hidden="true" className="mt-0.5 shrink-0 font-bold">
                   {messageType === "success" ? "✓" : "!"}
                 </span>
                 <span className="min-w-0 break-words [overflow-wrap:anywhere]">
@@ -354,8 +344,7 @@ function Login() {
         {/* Footer */}
         <p className="mt-7 px-2 text-center text-xs leading-6 text-gray-500">
           Secure authentication powered by BackendHub.
-          <br />
-          © {new Date().getFullYear()} BackendHub
+          <br />© {new Date().getFullYear()} BackendHub
         </p>
       </section>
     </main>

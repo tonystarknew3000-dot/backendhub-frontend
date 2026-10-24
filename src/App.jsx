@@ -11,6 +11,7 @@ import DashboardPage from "./components/Dashboard";
 import Profile from "./components/Profile";
 import AdminDashboard from "./components/AdminDashboard";
 import NotFound from "./components/NotFound";
+import CursorBackground from "./components/CursorBackground";
 
 const API_URL = "https://backend-course-api-fzwg.onrender.com";
 
@@ -96,6 +97,7 @@ function Dashboard() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#050507] text-white selection:bg-violet-500/30">
+      <CursorBackground />
       {/* Ambient background */}
       <div
         aria-hidden="true"
